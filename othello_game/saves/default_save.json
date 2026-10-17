@@ -1,0 +1,16 @@
+{
+  "version": "1.0",
+  "saveTime": "2026-10-17T08:00:00Z",
+  "currentStage": 1,
+  "unlockedStages": [
+    1
+  ],
+  "clearedStages": [],
+  "stats": {
+    "humanWins": 0,
+    "aiWins": 0,
+    "draws": 0
+  },
+  "stageHighScores": {},
+  "savedGame": null
+}

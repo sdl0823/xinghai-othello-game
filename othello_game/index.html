@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>星海九尾・黑白棋 MCTS 闖關對弈系統 (單機版)</title>
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/board.css">
+  <link rel="stylesheet" href="css/modal.css">
+</head>
+<body>
+
+  <div class="game-wrapper">
+    <!-- Header -->
+    <header class="game-header">
+      <div class="header-left">
+        <div class="header-emblem">弈</div>
+        <div class="header-title">
+          <h1>星海九尾・黑白棋</h1>
+          <p id="currentStageTitleText">第 1 關：星海啟航 (守關AI：小星玖)</p>
+        </div>
+      </div>
+      <div class="header-nav-btns">
+        <button class="btn primary" id="openCharSelectBtn" title="開啟角色選擇畫面">🎭 選角畫面</button>
+        <button class="btn cyan" id="openTimeLogBtn" title="查看對弈時間記錄器與各步耗時">⏱️ 時間記錄</button>
+        <button class="btn emerald" id="bgmToggleBtn" title="點擊切換背景音樂播放/暫停">🎵 音樂</button>
+        <button class="btn" id="soundToggleBtn" title="切換總音效與音樂開關">🔊 音效</button>
+        <button class="btn cyan" id="saveRecordBtn" title="存檔與生涯戰績管理">💾 記錄檔</button>
+        <button class="btn" id="openDevBtn" title="開啟音樂測試與模組說明">⚙️</button>
+      </div>
+    </header>
+
+    <!-- 10 關選單 (獲勝才能解鎖下一關) -->
+    <section class="stage-selector-bar">
+      <div class="stage-bar-title-row">
+        <span style="font-weight:700;color:var(--accent-gold);">星海十關試煉（獲勝即可解鎖下一關）</span>
+        <span style="font-size:0.7rem;color:var(--text-muted);" id="stageBestTimeHint">🔒 未解鎖關卡不可選｜點擊頭像可隨時換角</span>
+      </div>
+      <div class="stage-track-scroll" id="stageTrackScroll"></div>
+    </section>
+
+    <!-- Scoreboard + 即時對弈時間記錄器 (Player VS AI + Match Timer) -->
+    <section class="vs-scoreboard">
+      <div class="player-card" id="blackPlayerCard" title="點擊切換角色頭像">
+        <div class="player-ring human-ring" id="blackRing">
+          <img id="blackAvatar" src="" alt="Black">
+          <span class="ring-edit-badge">換角</span>
+        </div>
+        <div class="player-meta">
+          <div class="player-name-text" id="blackName">小璃玖 (你)</div>
+          <div class="player-sub-time" id="blackTimerText">⏱️ 用時 00:00</div>
+        </div>
+        <div class="player-score" id="blackScore">2</div>
+      </div>
+
+      <div class="vs-center-info">
+        <div class="match-clock-box">
+          <span class="clock-label">對弈時間</span>
+          <div class="clock-main-row">
+            <span class="clock-digits" id="matchTotalTimer">00:00</span>
+            <button class="clock-pause-btn" id="pauseTimerBtn" title="暫停/繼續計時">⏸</button>
+          </div>
+          <span class="clock-step-text" id="currentStepTimer">本手 0.0s｜第 1 手</span>
+        </div>
+        <div class="turn-pill" id="turnIndicator">輪到你落子</div>
+      </div>
+
+      <div class="player-card right-card" id="whitePlayerCard" title="點擊切換角色頭像">
+        <div class="player-ring ai-ring" id="whiteRing">
+          <img id="whiteAvatar" src="" alt="White">
+          <span class="ring-edit-badge">換角</span>
+        </div>
+        <div class="player-meta">
+          <div class="player-name-text" id="whiteName">小星玖 (AI)</div>
+          <div class="player-sub-time" id="whiteTimerText">⏱️ 用時 00:00</div>
+        </div>
+        <div class="player-score" id="whiteScore">2</div>
+      </div>
+    </section>
+
+    <!-- 關卡勝利 / 失敗 提示橫條 -->
+    <div class="stage-banner" id="stageBanner">
+      <div>
+        <div style="font-size:0.88rem;font-weight:800;color:#fff;" id="bannerTitle">挑戰成功！</div>
+        <div style="font-size:0.74rem;color:#cbd5e1;" id="bannerSub">下一關已成功解鎖！</div>
+      </div>
+      <div style="display:flex;gap:6px;">
+        <button class="btn" id="retryBtn">重玩本關</button>
+        <button class="btn emerald" id="nextStageBtn">挑戰下一關 🔓</button>
+      </div>
+    </div>
+
+    <!-- 核心純棋盤畫面 (專注對弈) -->
+    <main class="board-container">
+      <div class="coords-top">
+        <span></span>
+        <span>A</span><span>B</span><span>C</span><span>D</span><span>E</span><span>F</span><span>G</span><span>H</span>
+      </div>
+      <div class="coords-left-and-board">
+        <div class="coords-left">
+          <span>1</span><span>2</span><span>3</span><span>4</span><span>5</span><span>6</span><span>7</span><span>8</span>
+        </div>
+        <div class="board-grid" id="boardGrid"></div>
+      </div>
+    </main>
+
+    <!-- 棋盤下方控制按鈕 -->
+    <div class="btn-bar">
+      <button class="btn primary" id="newGameBtn">🔄 開新對局</button>
+      <button class="btn cyan" id="bottomCharSelectBtn">🎭 更換角色</button>
+      <button class="btn" id="hintBtn">💡 軍師提示</button>
+      <button class="btn" id="undoBtn" disabled>↩️ 悔棋一步</button>
+      <button class="btn" id="swapColorBtn">⚫ 玩家執黑先手</button>
+      <button class="btn" id="aiVsAiBtn">🤖 AI 自動對決</button>
+    </div>
+  </div>
+
+  <!-- 浮動提示 Toast -->
+  <div class="toast-msg" id="toastMsg">提示訊息</div>
+
+  <!-- ==================================================================== -->
+  <!-- 1. 選角畫面彈窗 (Character Selection Screen Modal) -->
+  <!-- ==================================================================== -->
+  <div class="modal-overlay" id="charSelectModal">
+    <div class="modal-card wide-modal">
+      <div class="modal-header">
+        <h3>🎭 星海九尾・出戰角色選擇畫面</h3>
+        <button class="modal-close-btn" id="closeCharModalBtn">&times;</button>
+      </div>
+
+      <!-- 選擇玩家自己的角色 -->
+      <div class="modal-section">
+        <div class="modal-section-title">
+          <span>✨ 選擇你的出戰角色（玩家青藍光環棋子）</span>
+          <span id="selectedHumanCharBadge" style="color:var(--accent-cyan);">目前選擇：小璃玖</span>
+        </div>
+        <div class="char-select-grid" id="humanCharGrid"></div>
+
+        <!-- 選中角色的詳細介紹卡 -->
+        <div class="char-detail-preview" id="humanCharPreviewBox">
+          <img id="previewHumanImg" src="" alt="Preview">
+          <div class="char-detail-text">
+            <div class="char-detail-name" id="previewHumanName">小璃玖・星芒九尾艦長</div>
+            <div class="char-detail-desc" id="previewHumanDesc">擁有澄澈藍眸與星芒領扣的九尾狐艦長。</div>
+          </div>
+          <label class="btn" style="cursor:pointer;font-size:0.7rem;flex-shrink:0;" title="可從電腦選取圖片作為自訂頭像棋子">
+            🖼️ 自訂頭像圖
+            <input type="file" id="customAvatarInput" accept="image/*" style="display:none;">
+          </label>
+        </div>
+      </div>
+
+      <!-- 選擇本關對手 AI 角色 -->
+      <div class="modal-section">
+        <div class="modal-section-title">
+          <span>⚔️ 對手 AI 角色頭像（燦金光環棋子）</span>
+          <span id="selectedAiCharBadge" style="color:var(--accent-gold);">目前守關者：小星玖</span>
+        </div>
+        <div class="char-select-grid" id="aiCharGrid"></div>
+      </div>
+
+      <!-- 先後手設定與確認按鈕 -->
+      <div class="modal-section" style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;">
+        <div style="display:flex;align-items:center;gap:8px;">
+          <span style="font-size:0.78rem;font-weight:700;color:#cbd5e1;">對局先後手：</span>
+          <button class="btn cyan" id="modalPickBlackBtn">⚫ 執黑先手</button>
+          <button class="btn" id="modalPickWhiteBtn">⚪ 執白後手</button>
+        </div>
+        <div style="display:flex;gap:8px;">
+          <button class="btn cyan" id="applyCharKeepGameBtn">僅套用頭像 (繼續本局)</button>
+          <button class="btn primary" id="applyCharNewGameBtn">確認選角並開新局 ▶</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- 2. 對弈時間記錄器彈窗 (Match Timer & Move Time Recorder Modal) -->
+  <!-- ==================================================================== -->
+  <div class="modal-overlay" id="timeLogModal">
+    <div class="modal-card wide-modal">
+      <div class="modal-header">
+        <h3>⏱️ 對弈時間記錄器與每手耗時明細</h3>
+        <button class="modal-close-btn" id="closeTimeLogModalBtn">&times;</button>
+      </div>
+
+      <!-- 當前對局即時時間統計 -->
+      <div class="modal-section">
+        <div class="modal-section-title">⚡ 當前對局計時面板</div>
+        <div class="save-stats-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="save-stat-box"><div class="lbl">本局總時間</div><div class="val" id="modalTotalTime">00:00</div></div>
+          <div class="save-stat-box"><div class="lbl">玩家累計用時</div><div class="val" id="modalHumanTime" style="color:var(--accent-cyan);">00:00.0</div></div>
+          <div class="save-stat-box"><div class="lbl">AI 累計用時</div><div class="val" id="modalAiTime">00:00.0</div></div>
+          <div class="save-stat-box"><div class="lbl">已下總手數</div><div class="val" id="modalMoveCount">0 手</div></div>
+        </div>
+      </div>
+
+      <!-- 本局每手落子時間明細 (Move-by-Move Time Log) -->
+      <div class="modal-section">
+        <div class="modal-section-title">
+          <span>📝 本局每手落子時間記錄（含座標、翻子數與單步思考耗時）</span>
+        </div>
+        <div class="time-table-wrap" style="max-height:165px;">
+          <table class="time-log-table">
+            <thead>
+              <tr>
+                <th>手數</th>
+                <th>角色陣營</th>
+                <th>落子座標</th>
+                <th>翻轉棋數</th>
+                <th>單步耗時</th>
+                <th>累計局時</th>
+              </tr>
+            </thead>
+            <tbody id="moveTimeTableBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:10px;">尚無落子紀錄，請在棋盤落子開始對弈</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- 歷史對局時間與戰績總表 -->
+      <div class="modal-section">
+        <div class="modal-section-title">
+          <span>🏆 歷史對弈時間記錄器（自動保存每場完賽時間與比數）</span>
+          <button class="btn" id="clearTimeHistoryBtn" style="padding:2px 8px;font-size:0.66rem;">清空時間紀錄</button>
+        </div>
+        <div class="time-table-wrap" style="max-height:180px;">
+          <table class="time-log-table">
+            <thead>
+              <tr>
+                <th>日期時間</th>
+                <th>關卡</th>
+                <th>對戰角色</th>
+                <th>結果與比數</th>
+                <th>總耗時</th>
+                <th>玩家/AI用時</th>
+              </tr>
+            </thead>
+            <tbody id="matchHistoryTableBody">
+              <tr><td colspan="6" style="text-align:center;color:var(--text-muted);padding:10px;">尚無完賽歷史紀錄</td></tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- 3. 記錄檔與存檔管理彈窗 (Save / Load Modal) -->
+  <!-- ==================================================================== -->
+  <div class="modal-overlay" id="saveModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>💾 遊戲記錄檔與進度管理</h3>
+        <button class="modal-close-btn" id="closeSaveModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📊 當前生涯戰績統計</div>
+        <div class="save-stats-grid" style="grid-template-columns:repeat(4,1fr);">
+          <div class="save-stat-box"><div class="lbl">已通關</div><div class="val" id="statCleared">0 / 10</div></div>
+          <div class="save-stat-box"><div class="lbl">獲勝</div><div class="val" id="statWins">0</div></div>
+          <div class="save-stat-box"><div class="lbl">失利</div><div class="val" id="statLosses">0</div></div>
+          <div class="save-stat-box"><div class="lbl">平手</div><div class="val" id="statDraws">0</div></div>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">⚡ 當前殘局存檔 / 讀檔（含對弈計時狀態）</div>
+        <div style="display:flex;gap:8px;margin-bottom:6px;">
+          <button class="btn emerald" id="saveGameBtn" style="flex:1;">儲存當前對局</button>
+          <button class="btn cyan" id="loadGameBtn" style="flex:1;" disabled>讀取對局存檔</button>
+        </div>
+        <p style="font-size:0.68rem;color:var(--text-muted);">可在對局進行中隨時儲存殘局、所選角色與已用時間，隨時還原。</p>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📁 本機檔案匯出與匯入 (.JSON)</div>
+        <div style="display:flex;gap:8px;margin-bottom:8px;">
+          <button class="btn primary" id="exportSaveBtn" style="flex:1;">匯出記錄檔 (.json)</button>
+          <label class="btn cyan" style="flex:1;text-align:center;cursor:pointer;justify-content:center;">
+            匯入記錄檔 (.json)
+            <input type="file" id="importFileInput" accept=".json" style="display:none;">
+          </label>
+        </div>
+        <p style="font-size:0.68rem;color:var(--text-muted);">
+          匯出的 JSON 檔包含已解鎖關卡、選角設定、對弈時間記錄器與歷史戰績，可在任何電腦單機版直接匯入還原！
+        </p>
+      </div>
+
+      <div style="text-align:right;margin-top:8px;">
+        <button class="btn" id="resetProgressBtn" style="color:var(--accent-rose);border-color:var(--accent-rose);">重置所有關卡進度</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ==================================================================== -->
+  <!-- 4. 設計師與音樂測試面板彈窗 -->
+  <!-- ==================================================================== -->
+  <div class="modal-overlay" id="devModal">
+    <div class="modal-card">
+      <div class="modal-header">
+        <h3>⚙️ 音樂測試與設計師模組面板</h3>
+        <button class="modal-close-btn" id="closeDevModalBtn">&times;</button>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">🎵 關卡音樂即時載入與測試</div>
+        <p style="font-size:0.72rem;color:#cbd5e1;margin-bottom:8px;">
+          目前第 1 關音樂 <code>stage1.mp3</code> 已內建於 <code>assets/audio/stages/stage1.mp3</code>！你也可以在此直接選取電腦中的 MP3 檔案即時預覽播放：
+        </p>
+        <div style="display:flex;gap:8px;align-items:center;">
+          <label class="btn primary" style="cursor:pointer;flex:1;justify-content:center;">
+            📂 選取本關音樂檔 (.mp3/.wav) 立即播放
+            <input type="file" id="customBgmFileInput" accept="audio/*" style="display:none;">
+          </label>
+        </div>
+      </div>
+
+      <div class="modal-section">
+        <div class="modal-section-title">📁 模組化單機資料夾結構說明</div>
+        <p style="font-size:0.72rem;color:#cbd5e1;line-height:1.6;">
+          • <strong>assets/audio/stages/</strong>：放置 <code>stage1.mp3</code> ~ <code>stage10.mp3</code>。<br>
+          • <strong>assets/audio/sfx/</strong>：可自訂 <code>move.mp3</code>、<code>corner.mp3</code>、<code>stage_clear.mp3</code> 等棋子音效。<br>
+          • <strong>assets/avatars/</strong> 與 <strong>assets/animations/pieces/</strong>：放置角色棋子頭像與翻面動畫圖。<br>
+          • <strong>saves/</strong>：記錄檔資料夾，支援 JSON 存檔與離線載入。
+        </p>
+      </div>
+    </div>
+  </div>
+
+  <!-- 引入模組化程式庫 -->
+  <script src="js/characters.js"></script>
+  <script src="js/stages.js"></script>
+  <script src="js/othello_engine.js"></script>
+  <script src="js/mcts_engine.js"></script>
+  <script src="js/audio_manager.js"></script>
+  <script src="js/storage_manager.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>

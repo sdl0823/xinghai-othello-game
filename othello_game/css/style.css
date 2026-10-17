@@ -1,0 +1,467 @@
+/* css/style.css - 遊戲主版面與視覺主題 (專注純棋盤沉浸設計 + 計時器 + 選角入口) */
+:root {
+  --bg-deep: #070d18;
+  --bg-panel: rgba(15, 23, 42, 0.94);
+  --bg-card: rgba(26, 38, 66, 0.88);
+  --border-gold: rgba(243, 198, 107, 0.4);
+  --accent-gold: #f3c66b;
+  --accent-cyan: #5ce1e6;
+  --accent-emerald: #10b981;
+  --accent-rose: #f43f5e;
+  --text-main: #f8fafc;
+  --text-muted: #94a3b8;
+  --board-green-1: #134e4a;
+  --board-green-2: #082f2c;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+  background: radial-gradient(circle at 50% 15%, #18263f 0%, #070d18 70%, #03060c 100%);
+  color: var(--text-main);
+  min-height: 100vh;
+  line-height: 1.45;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 10px 12px 28px;
+}
+
+.game-wrapper {
+  width: 100%;
+  max-width: 720px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Header */
+.game-header {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px 14px;
+  background: linear-gradient(135deg, rgba(22, 34, 60, 0.95), rgba(13, 20, 36, 0.95));
+  border: 1px solid var(--border-gold);
+  border-radius: 12px;
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+  margin-bottom: 10px;
+}
+
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.header-emblem {
+  width: 36px;
+  height: 36px;
+  border-radius: 9px;
+  background: linear-gradient(135deg, #f3c66b, #b47d2a);
+  color: #070d18;
+  font-weight: 900;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 10px rgba(243, 198, 107, 0.4);
+  flex-shrink: 0;
+}
+
+.header-title h1 {
+  font-size: 1.02rem;
+  font-weight: 800;
+  background: linear-gradient(90deg, #fff7e0, #f3c66b);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.header-title p {
+  font-size: 0.71rem;
+  color: var(--text-muted);
+}
+
+.header-nav-btns {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 5px;
+}
+
+/* 關卡選單（只有獲勝才能解鎖下一關） */
+.stage-selector-bar {
+  width: 100%;
+  background: var(--bg-panel);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 12px;
+  padding: 8px 10px;
+  margin-bottom: 10px;
+}
+
+.stage-bar-title-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  margin-bottom: 6px;
+  font-size: 0.76rem;
+}
+
+.stage-track-scroll {
+  display: grid;
+  grid-template-columns: repeat(10, minmax(60px, 1fr));
+  gap: 5px;
+  overflow-x: auto;
+  padding-bottom: 3px;
+}
+
+.stage-btn {
+  background: rgba(15, 23, 42, 0.85);
+  border: 1.5px solid rgba(255, 255, 255, 0.12);
+  border-radius: 8px;
+  padding: 4px 2px;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  position: relative;
+  user-select: none;
+}
+
+.stage-btn:hover:not(.locked) {
+  border-color: var(--accent-gold);
+  transform: translateY(-1px);
+}
+
+.stage-btn.active-stage {
+  border-color: var(--accent-gold);
+  background: linear-gradient(135deg, rgba(243, 198, 107, 0.25), rgba(92, 225, 230, 0.15));
+  box-shadow: 0 0 10px rgba(243, 198, 107, 0.35);
+}
+
+.stage-btn.cleared {
+  border-color: rgba(16, 185, 129, 0.65);
+}
+
+.stage-btn.locked {
+  opacity: 0.5;
+  cursor: not-allowed;
+  filter: grayscale(60%);
+  border-style: dashed;
+}
+
+.stage-btn-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  object-fit: cover;
+  object-position: center 15%;
+  margin-bottom: 2px;
+}
+
+.stage-btn-num {
+  font-size: 0.62rem;
+  font-weight: 700;
+  color: var(--accent-gold);
+}
+
+.stage-btn-time {
+  font-size: 0.55rem;
+  color: var(--accent-cyan);
+  font-family: monospace;
+}
+
+.stage-btn-icon {
+  font-size: 0.6rem;
+  position: absolute;
+  top: 2px;
+  right: 2px;
+}
+
+/* VS Scoreboard + 對弈計時器 */
+.vs-scoreboard {
+  width: 100%;
+  background: linear-gradient(135deg, rgba(20, 30, 52, 0.95), rgba(11, 18, 33, 0.95));
+  border: 1px solid var(--border-gold);
+  border-radius: 12px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 8px;
+  border-radius: 9px;
+  border: 1.5px solid transparent;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.player-card:hover {
+  background: rgba(255, 255, 255, 0.05);
+  border-color: rgba(92, 225, 230, 0.4);
+}
+
+.player-card.active-turn {
+  background: rgba(243, 198, 107, 0.14);
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 12px rgba(243, 198, 107, 0.25);
+}
+
+.player-card.right-card {
+  flex-direction: row-reverse;
+  text-align: right;
+}
+
+.player-ring {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  overflow: hidden;
+  border: 2.5px solid rgba(255, 255, 255, 0.35);
+  position: relative;
+  flex-shrink: 0;
+}
+
+.player-ring.human-ring {
+  border-color: var(--accent-cyan);
+  box-shadow: 0 0 10px rgba(92, 225, 230, 0.45);
+}
+
+.player-ring.ai-ring {
+  border-color: var(--accent-gold);
+  box-shadow: 0 0 10px rgba(243, 198, 107, 0.45);
+}
+
+.player-ring img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center 15%;
+}
+
+.ring-edit-badge {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: rgba(7, 13, 24, 0.78);
+  color: var(--accent-cyan);
+  font-size: 0.52rem;
+  font-weight: 800;
+  text-align: center;
+  padding: 1px 0;
+}
+
+.player-meta {
+  min-width: 0;
+  flex: 1;
+}
+
+.player-name-text {
+  font-size: 0.8rem;
+  font-weight: 700;
+  color: #fff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.player-sub-time {
+  font-size: 0.68rem;
+  color: var(--accent-cyan);
+  font-family: monospace;
+  margin-top: 1px;
+}
+
+.player-score {
+  font-size: 1.45rem;
+  font-weight: 800;
+  font-family: monospace;
+  color: var(--accent-gold);
+}
+
+.vs-center-info {
+  text-align: center;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.match-clock-box {
+  background: rgba(7, 13, 24, 0.82);
+  border: 1px solid rgba(243, 198, 107, 0.35);
+  border-radius: 9px;
+  padding: 3px 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  min-width: 118px;
+}
+
+.clock-label {
+  font-size: 0.58rem;
+  color: var(--text-muted);
+  letter-spacing: 0.04em;
+}
+
+.clock-main-row {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.clock-digits {
+  font-size: 1.05rem;
+  font-weight: 900;
+  font-family: monospace;
+  color: var(--accent-gold);
+  letter-spacing: 0.05em;
+}
+
+.clock-pause-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+  border-radius: 4px;
+  font-size: 0.62rem;
+  padding: 1px 5px;
+  cursor: pointer;
+}
+
+.clock-pause-btn:hover {
+  border-color: var(--accent-gold);
+}
+
+.clock-step-text {
+  font-size: 0.62rem;
+  font-family: monospace;
+  color: #cbd5e1;
+}
+
+.turn-pill {
+  font-size: 0.7rem;
+  font-weight: 700;
+  padding: 2px 9px;
+  border-radius: 99px;
+  background: rgba(92, 225, 230, 0.16);
+  color: var(--accent-cyan);
+  border: 1px solid rgba(92, 225, 230, 0.35);
+  white-space: nowrap;
+}
+
+/* Stage Clear / Result Banner */
+.stage-banner {
+  width: 100%;
+  display: none;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 8px 12px;
+  border-radius: 10px;
+  margin-bottom: 10px;
+  background: linear-gradient(135deg, rgba(16, 185, 129, 0.25), rgba(15, 23, 42, 0.95));
+  border: 1.5px solid var(--accent-emerald);
+}
+
+.stage-banner.show { display: flex; }
+.stage-banner.defeat {
+  background: linear-gradient(135deg, rgba(244, 63, 94, 0.25), rgba(15, 23, 42, 0.95));
+  border-color: var(--accent-rose);
+}
+
+/* Control Buttons Bar */
+.btn-bar {
+  width: 100%;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.btn {
+  padding: 6px 11px;
+  border-radius: 8px;
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  background: rgba(30, 41, 59, 0.9);
+  color: var(--text-main);
+  font-size: 0.74rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.15s ease;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.btn:hover:not(:disabled) {
+  border-color: var(--accent-gold);
+  background: rgba(51, 65, 85, 0.95);
+  transform: translateY(-1px);
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn.primary {
+  background: linear-gradient(135deg, #f3c66b, #d99b38);
+  color: #0f172a;
+  border: none;
+}
+
+.btn.emerald {
+  background: linear-gradient(135deg, #10b981, #059669);
+  color: #fff;
+  border: none;
+}
+
+.btn.cyan {
+  background: rgba(92, 225, 230, 0.18);
+  border-color: rgba(92, 225, 230, 0.5);
+  color: var(--accent-cyan);
+}
+
+/* Toast Message */
+.toast-msg {
+  position: fixed;
+  bottom: 24px;
+  left: 50%;
+  transform: translateX(-50%);
+  background: rgba(15, 23, 42, 0.95);
+  border: 1px solid var(--accent-gold);
+  border-radius: 8px;
+  padding: 8px 16px;
+  font-size: 0.8rem;
+  color: #fff;
+  box-shadow: 0 4px 18px rgba(0, 0, 0, 0.5);
+  z-index: 9999;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.25s ease;
+}
+
+.toast-msg.show {
+  opacity: 1;
+}
